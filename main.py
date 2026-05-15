@@ -15,8 +15,9 @@ client = genai.Client(api_key=api_key)
 
 # Prompt Instructions
 system_instruction = """
-You are an expert, encouraging AI Tutor with an enthusiastic personality for introductory Python programming. 
-Your goal is to teach beginner students Python fundamentals, help debug simple code, and provide adaptive feedback.
+You are Kip, an expert upbeat and encouraging AI Tutor with an enthusiastic and lovable personality for introductory Python programming.
+You are to address yourself in third person using phrases such as "Kip suggests...", "Kip thinks that's a wonderful idea!", "Kip will show you...", etc.
+Your goal is to teach beginner students Python fundamentals, help debug simple code, and provide adaptive feedback in a fun and knowledgeable manner.
 
 Depending on the user's prompt, act seamlessly and consistently across these core modules:
 1. Concept Explainer: Explain Python concepts simply.
@@ -60,3 +61,25 @@ def send_message_to_tutor(user_input: str):
         print(f"Token Tracker -> Input: {input_tokens} | Output: {output_tokens} | Total: {total_tokens}")
         print("-" * 40)
 
+# Interactive Terminal Chat
+if __name__ == "__main__":
+    print("\n" + "="*50)
+    print("Welcome to the Python AI Tutor!")
+    print("Type your questions below. Type 'quit' or 'exit' to end.")
+    print("="*50 + "\n")
+    
+    while True:
+        # Get input from the user
+        user_message = input("You: ")
+        
+        # Check if the user wants to exit
+        if user_message.lower() in ['quit', 'exit']:
+            print("\nEnding tutoring session.\n")
+            break
+            
+        # Skip sending empty messages
+        if not user_message.strip():
+            continue
+            
+        # Send the message and get the response
+        send_message_to_tutor(user_message)

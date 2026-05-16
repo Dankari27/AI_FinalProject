@@ -4,10 +4,12 @@ import base64
 from google import genai
 from google.genai import types
 
-# Attribution for images used (Will add more detailed attribution later):
-# Background wallpaper: https://wallpapercave.com/wp/wp14473750.jpg
-# Kip's Avatar https://wwww.craiyon.com/en/image/6w6ppSfTRZmRkj0ebcrE_w
-# User's Avatar https://pngtree.com/freepng/pixel-art-laptop-with-blank-blue-screen_23179133.html
+#TODO
+# Change Kips avatar to something custom and get rid of the placeholder avatar images that are currently being used.
+# Add behavior based physical reactions for Kips Avatar within output prompts. 
+# So that way when Kip is excited, fearful, suprised, happy, etc his Avatar will match the vibe of his responses.
+# Adjust the token tracker to display more in-depth stats such as rates per minute, a rate limit for the gemini 3's model so you know when you are going to hit the cap, etc. This way it's more accurate than just a real-time usage display.
+# Add some more style to the design of the page with outlines, backgrounds for headers, gifs, and maybe some custom stuff. However, since streamlit is strict with custom stuff, most of this will be limited in scope.
 
 # PAGE CONFIGURATION
 st.set_page_config(page_title="Kip - The Fun Loving Python Tutor", page_icon="UI/kip_favicon.png", layout="centered")
@@ -119,7 +121,7 @@ MODE 2: TEACHING & DEBUGGING (Python questions, code requests, errors)
 Concept Explanation: [Brief, simple explanation tailored to beginners, written in Kip's energetic voice]
 Code Example: [Annotated Python code snippet with Kip's excited comments]
 Practice Exercise: [A short, relevant challenge for the student to try]
-Feedback: [Constructive feedback or over-the-top encouragement]
+Feedback: [ONLY INCLUDE THIS HEADER IF THE USER SUBMITTED CODE. Provide constructive feedback or over-the-top encouragement on their specific code.]
 
 Keep explanations concise, friendly, and formatted clearly using Markdown.
 """
@@ -147,6 +149,9 @@ for message in st.session_state.messages:
     # Set the avatar based on the role
     avatar = "UI/Kip_Avatar.png" if message["role"] == "assistant" else "UI/user.png"
     with st.chat_message(message["role"], avatar=avatar):
+        # Inject the large image directly into the chat bubble for Kip
+        if message["role"] == "assistant":
+            st.image("UI/Kip_Avatar.png", width=150) 
         st.markdown(message["content"])
 
 # React to user input
@@ -159,8 +164,18 @@ if prompt := st.chat_input("Ask Kip a Python question..."):
     # Send message to Gemini and get response with Error Handling
     with st.chat_message("assistant", avatar="UI/Kip_Avatar.png"):
         try:
-            # Try to send the message
+            # Create a temporary text container to show while Kip is "thinking"
+            thinking_placeholder = st.empty()
+            thinking_placeholder.markdown("*(Kip is gathering his Python puzzle pieces...)*")
+            
+            # Try to send the message (This pauses the script while waiting for the API)
             response = st.session_state.chat_session.send_message(prompt)
+            
+            # Clear out the thinking text now that the response is ready
+            thinking_placeholder.empty()
+            
+            # Inject the large image and display the final text
+            st.image("UI/Kip_Avatar.png", width=150)
             st.markdown(response.text)
             
             # Save the message to history before refreshing

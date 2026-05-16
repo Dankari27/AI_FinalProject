@@ -1,4 +1,4 @@
-# Kip - The Fun Loving Python AI Tutor
+# Kip - The Python Tutor
 
 ## Description
 <p align="left">
@@ -46,8 +46,8 @@ Ensure you have the complete project folder, including the main Python script an
     ├── README.md               # Project documentation
     └── UI/                     # UI Assets folder
         ├── background.png      
-        ├── Kip_Avatar.png      
-        ├── kip_favicon.png     
+        ├── Kip_Avatars(7 total)
+        ├── kip_favicon.png
         └── user.png            
 
 **2. Install Required Packages**
@@ -76,5 +76,4 @@ Your browser should automatically open to http://localhost:8501 with Kip ready t
 The visual assets used in this custom UI are credited to the following creators and platforms:
 
 * **Background Wallpaper:** Created by [Jeff Östberg](https://wallpapercave.com/w/wp10148832) - License: Personal / Educational Use
-* **Kip's Avatar:** Made with [Craiyon](https://www.craiyon.com/en/image/6w6ppSfTRZmRkj0ebcrE_w) - License: Public Domain
 * **User Avatar:** Orange user icon vector by [faizan11](https://www.vectorstock.com/royalty-free-vector/orange-user-icon-vector-42797453) - License: Standard Royalty-Free License

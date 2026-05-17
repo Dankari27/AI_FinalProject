@@ -8,11 +8,12 @@ from google import genai
 from google.genai import types
 
 #TODO
-# Get an actual background for the webpage instead of the current placeholder
 # Adjust the design of the page by incorperating several custom CSS improvements such as headers, small animations, etc
 # Adjust the token and limit stats to be more accurate
-# 
-
+# Change the red outline for user input to be more of an orange color
+# Fix the background for the userinput box because it doesn't fully cover the right side of the screen after the user types their first prompt. 
+# Change the color of the top bar, input background, and token/limit rate analysis sidebar to colors that fit the main page background.
+# Maybe make the rest of the UI slightly transparent as well. 
 
 # PAGE CONFIGURATION
 st.set_page_config(page_title="Kip - The Python Tutor", page_icon="UI/kip_favicon.png", layout="centered")
@@ -90,25 +91,46 @@ def get_base64_of_bin_file(bin_file):
     return base64.b64encode(data).decode()
 
 try:
-    bg_base64 = get_base64_of_bin_file("UI/background.png")
+    bg_base64 = get_base64_of_bin_file("UI/background.gif")
     
     # Inject Custom CSS
     st.markdown(
         f"""
         <style>
-        /* Apply the Background PNG */
-        .stApp {{
-            background-image: url("data:image/png;base64,{bg_base64}");
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+        /* Define Camera Pan */
+        @keyframes cinematicPan {{
+            0%   {{ background-position: 0% 0%; }}
+            25%  {{ background-position: 100% 15%; }}
+            50%  {{ background-position: 85% 100%; }}
+            75%  {{ background-position: 15% 85%; }}
+            100% {{ background-position: 0% 0%; }}
         }}
         
-        /* Add a dark tint and blur */
+        /* GIF and Camera Animation */
+        .stApp {{
+            background-image: url("data:image/gif;base64,{bg_base64}");
+            
+            /* Work Around For Image Stretching */
+            background-size: max(115vw, 204.4vh) auto; 
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            
+            /* Trigger the pan: 60 seconds total, smooth easing, infinite loop */
+            animation: cinematicPan 60s ease-in-out infinite;
+        }}
+        
+        /* FROSTED GLASS EFFECT */
         .stApp > div:first-child {{
-            background-color: rgba(0, 0, 0, 0.4) !important; /* Slightly lighter so the blur pops */
-            backdrop-filter: blur(8px) !important;
-            -webkit-backdrop-filter: blur(8px) !important;
+            background-color: rgba(10, 15, 25, 0.35) !important; 
+            
+            background-image: 
+                radial-gradient(circle at 15% 25%, rgba(255, 255, 255, 0.2) 0%, transparent 40%),
+                radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.3) 0%, transparent 80%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 500 500' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='frost'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' result='noise'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.01' numOctaves='2' result='clouds'/%3E%3CfeDisplacementMap in='noise' in2='clouds' scale='30' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23frost)' opacity='0.04'/%3E%3C/svg%3E") !important;
+            
+            backdrop-filter: blur(5px) contrast(1.15) brightness(0.9) !important;
+            -webkit-backdrop-filter: blur(5px) contrast(1.15) brightness(0.9) !important;
         }}
         
         /* Remove Streamlit's default light grey background from the users chat row */
@@ -121,6 +143,8 @@ try:
             background-color: rgba(0, 0, 0, 0.7) !important;
             padding: 1rem !important;
             border-radius: 10px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
         }}
         </style>
         """,
@@ -280,6 +304,9 @@ for message in st.session_state.messages:
 
 # React to user input
 if prompt := st.chat_input("Ask Kip a Python question..."):
+    #Inject two invisible spaces so markdown works with single newlines
+    prompt = prompt.replace('\n', '  \n')
+    
     # Display user message in chat message container
     st.chat_message("user", avatar="UI/user.png").markdown(prompt)
     

@@ -45,7 +45,7 @@ Ensure you have the complete project folder, including the main Python script an
     ├── app.py                  # Main application script
     ├── README.md               # Project documentation
     └── UI/                     # UI Assets folder
-        ├── background.png      
+        ├── background.gif      
         ├── Kip_Avatars(7 total)
         ├── kip_favicon.png
         └── user.png            
@@ -75,5 +75,4 @@ Your browser should automatically open to http://localhost:8501 with Kip ready t
 ## Asset Attribution
 The visual assets used in this custom UI are credited to the following creators and platforms:
 
-* **Background Wallpaper:** Created by [Jeff Östberg](https://wallpapercave.com/w/wp10148832) - License: Personal / Educational Use
 * **User Avatar:** Orange user icon vector by [faizan11](https://www.vectorstock.com/royalty-free-vector/orange-user-icon-vector-42797453) - License: Standard Royalty-Free License

@@ -7,13 +7,6 @@ import random
 from google import genai
 from google.genai import types
 
-#TODO
-# Adjust the design of the page by incorperating several custom CSS improvements such as headers, small animations, etc
-# Adjust the token and limit stats to be more accurate
-# Change the red outline for user input to be more of an orange color
-# Fix the background for the userinput box because it doesn't fully cover the right side of the screen after the user types their first prompt. 
-# Change the color of the top bar, input background, and token/limit rate analysis sidebar to colors that fit the main page background.
-# Maybe make the rest of the UI slightly transparent as well. 
 
 # PAGE CONFIGURATION
 st.set_page_config(page_title="Kip - The Python Tutor", page_icon="UI/kip_favicon.png", layout="centered")
@@ -33,20 +26,6 @@ def extract_mood_and_clean_text(raw_text):
         clean_text = clean_text.strip()
         
     return mood, clean_text
-
-
-#Kip_Sleeping.png: Triggers on the initial welcome screen when the app is paused because the user has not inputted their Gemini API key yet.
-
-#Kip_Thinking.png: Triggers temporarily in the chat UI while the script is actively waiting for the Gemini API to generate and return a response.
-
-#Kip_Greeting.png: This is Kip's default state ([MOOD: GREETING]). It triggers when he is saying hello, answering simple/general questions, or providing standard concept explanations.
-
-#Kip_Excited.png OR Kip_Excited2.png: The engine will randomly choose between these two avatars when Kip is thrilled ([MOOD: EXCITED]). This triggers when the user gets a practice exercise correct, writes good code, or demonstrates a clear understanding of a topic, or explicitly asks if Kip is excited.
-
-#Kip_Suprised.png: Triggers when Kip is amazed ([MOOD: SURPRISED]). This happens if the user solves a particularly difficult problem or points out an alternative solution or edge-case that Kip didn't explicitly teach them.
-
-#Kip_Determined.png: Triggers when Kip is focused ([MOOD: DETERMINED]). This is used when Kip is issuing a new Practice Exercise challenge for the user to try, or when he is giving encouraging advice to keep trying after a mistake.
-
 
 def get_avatar_for_mood(mood):
     """Maps the parsed mood tag to the correct PNG file."""
@@ -74,14 +53,12 @@ if "latest_output_tokens" not in st.session_state:
 if "request_history" not in st.session_state:
     st.session_state.request_history = []  # Elements stored as tuples: (timestamp, token_count)
 
-# ROLLING SLIDING WINDOW (60 SECONDS) FOR RATE LIMIT ACCURACY
+# ROLLING SLIDING WINDOW BASE PRUNE
 current_timestamp = time.time()
 st.session_state.request_history = [
     interaction for interaction in st.session_state.request_history 
     if current_timestamp - interaction[0] < 60
 ]
-rolling_rpm = len(st.session_state.request_history)
-rolling_tpm = sum(interaction[1] for interaction in st.session_state.request_history)
 
 # CACHED CUSTOM CSS FOR BACKGROUND 
 @st.cache_data
@@ -133,6 +110,62 @@ try:
             -webkit-backdrop-filter: blur(5px) contrast(1.15) brightness(0.9) !important;
         }}
         
+        /* Make Top Header Transparent to match background */
+        [data-testid="stHeader"] {{
+            background-color: transparent !important;
+        }}
+
+        /* Sidebar Styling */
+        [data-testid="stSidebar"] {{
+            background-color: rgba(10, 15, 25, 0.45) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }}
+        [data-testid="stSidebarHeader"] {{
+            background-color: transparent !important;
+        }}
+
+        /* MAKE BOTTOM CONTAINER FULLY TRANSPARENT */
+        /* This lets the animated GIF reach to the bottom edge */
+        [data-testid="stBottom"],
+        [data-testid="stBottom"] > div,
+        [data-testid="stBottomBlockContainer"] {{
+            background-color: transparent !important;
+            background: transparent !important;
+        }}
+
+        /* Style the Chat Input Box */
+        [data-testid="stChatInput"] {{
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 10px !important;
+        }}
+        
+        /* Strip the default grey background from all of Streamlit's layers */
+        [data-testid="stChatInput"] div,
+        [data-testid="stChatInput"] textarea {{
+            background-color: transparent !important;
+        }}
+        
+        /* OVERRIDE THE RED FOCUS OUTLINE WITH ORANGE (Inner Elements Only) */
+        [data-testid="stChatInput"] > div:focus-within,
+        [data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {{
+            border-color: #ff8c00 !important;
+            border-width: 1px !important; 
+            box-shadow: none !important; 
+        }}
+        
+        /* Fixes cursor area spawning an extra ghost outline */
+        [data-testid="stChatInput"] textarea:focus,
+        [data-testid="stTextInput"] input:focus {{
+            outline: none !important;
+            box-shadow: none !important;
+            border-color: transparent !important;
+        }}
+
         /* Remove Streamlit's default light grey background from the users chat row */
         [data-testid="stChatMessage"] {{
             background-color: transparent !important;
@@ -154,23 +187,10 @@ except FileNotFoundError:
     # If the file isn't there then pass silently so the app doesn't break
     pass
 
-# SIDEBAR: SETTINGS & METRICS
-with st.sidebar:
-    st.title("Tutor Settings")
-    
-    # Fallback for API Key
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        st.warning("API Key not found in environment.")
-        api_key = st.text_input("Enter Gemini API Key to continue:", type="password")
-        if not api_key:
-            st.info("You can paste the API key here to test the app.")
-    else:
-        st.success("API Key loaded from environment!")
 
-    st.markdown("---")
-    
-    # API TELEMETRY METRICS
+# This runs in an isolated loop every 2 seconds to keep the sliding window accurate without refreshing the chat
+@st.fragment(run_every="2s")
+def render_telemetry(selected_tier):
     st.header("API Performance Telemetry")
     
     # Cumulative Token Usage Breakdown
@@ -189,8 +209,6 @@ with st.sidebar:
     
     INPUT_LIMIT = 1048576
     OUTPUT_LIMIT = 65536
-    FREE_RPM_LIMIT = 15
-    FREE_TPM_LIMIT = 1000000
     
     # Context Window Calculation
     input_ratio = min(st.session_state.latest_input_tokens / INPUT_LIMIT, 1.0)
@@ -204,16 +222,58 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Live Velocity Metrics (Doesn't quite update in realtime due to Streamlit constraints)
+    # Live Velocity Metrics
     st.subheader("Rate Limit Buffer Status")
     
-    rpm_ratio = min(rolling_rpm / FREE_RPM_LIMIT, 1.0)
-    st.markdown(f"**Velocity Rate (RPM Loading):** {rolling_rpm} / {FREE_RPM_LIMIT} Requests")
+    # Adjust caps based on tier selection
+    if selected_tier == "Free Tier":
+        RPM_LIMIT = 15
+        TPM_LIMIT = 1000000
+    else:
+        RPM_LIMIT = 1000
+        TPM_LIMIT = 4000000
+        
+    # Recalculate sliding window dynamically based on the exact live uptime
+    live_time = time.time()
+    valid_history = [
+        interaction for interaction in st.session_state.request_history 
+        if live_time - interaction[0] < 60
+    ]
+    
+    rolling_rpm = len(valid_history)
+    rolling_tpm = sum(interaction[1] for interaction in valid_history)
+    
+    rpm_ratio = min(rolling_rpm / RPM_LIMIT, 1.0)
+    st.markdown(f"**Velocity Rate (RPM Loading):** {rolling_rpm} / {RPM_LIMIT} Requests")
     st.progress(rpm_ratio)
     
-    tpm_ratio = min(rolling_tpm / FREE_TPM_LIMIT, 1.0)
-    st.markdown(f"**Throughput Density (TPM Loading):** {rolling_tpm:,} / {FREE_TPM_LIMIT:,} Tokens")
+    tpm_ratio = min(rolling_tpm / TPM_LIMIT, 1.0)
+    st.markdown(f"**Throughput Density (TPM Loading):** {rolling_tpm:,} / {TPM_LIMIT:,} Tokens")
     st.progress(tpm_ratio)
+
+
+# SIDEBAR: SETTINGS & METRICS
+with st.sidebar:
+    st.title("Tutor Settings")
+    
+    # Fallback for API Key
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        st.warning("API Key not found in environment.")
+        api_key = st.text_input("Enter Gemini API Key to continue:", type="password")
+    else:
+        st.success("API Key loaded from environment!")
+
+    st.markdown("---")
+    
+    # TIER SELECTION 
+    api_tier = st.radio("Gemini API Tier", ["Free Tier", "Paid Tier"], horizontal=True)
+    
+    st.markdown("---")
+    
+    # Trigger the realtime fragment 
+    render_telemetry(api_tier)
+
 
 # Stop execution if no key is provided (Show Sleeping Kip)
 if not api_key:
@@ -304,7 +364,7 @@ for message in st.session_state.messages:
 
 # React to user input
 if prompt := st.chat_input("Ask Kip a Python question..."):
-    #Inject two invisible spaces so markdown works with single newlines
+    # Inject two invisible spaces so markdown works with single newlines
     prompt = prompt.replace('\n', '  \n')
     
     # Display user message in chat message container
@@ -359,7 +419,6 @@ if prompt := st.chat_input("Ask Kip a Python question..."):
                 
                 # Log current payload transactions for sliding windows
                 st.session_state.request_history.append((time.time(), latest_total))
-                st.rerun() 
                 
         except Exception as e:
             # Check if it is a rate limit (429) error
